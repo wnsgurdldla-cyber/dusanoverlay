@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>위플랩 연동 산 배경 백두산</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+    }
+    body {
+      background-color: transparent;
+      margin: 0;
+      padding: 0;
+      width: 300px;
+      height: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 산 배경 디자인 레이어 */
+    .bg-mountain {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      /* 수묵화/웅장한 산 배경 그래픽 */
+      background: linear-gradient(to bottom, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.4)),
+                  url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
+      z-index: 1;
+      border-radius: 20px;
+    }
+
+    /* 콘텐츠 영역 */
+    .content-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .header-info {
+      text-align: center;
+      color: #ffffff;
+      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 255, 204, 0.4);
+      margin-bottom: 15px;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 800;
+      color: #00ffcc;
+      text-shadow: 0 0 10px rgba(0, 255, 204, 0.8);
+    }
+    .target-info {
+      font-size: 15px;
+      color: #e2e8f0;
+      margin-top: 6px;
+    }
+    .count-info {
+      font-size: 18px;
+      color: #ffd700;
+      font-weight: bold;
+      margin-top: 4px;
+    }
+
+    /* 세로형 게이지 바 */
+    .gauge-container {
+      position: relative;
+      width: 85px;
+      height: 600px;
+      background: rgba(0, 0, 0, 0.65);
+      border: 3px solid rgba(255, 255, 255, 0.8);
+      border-radius: 45px;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(4px);
+    }
+
+    .gauge-fill {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 0%;
+      background: linear-gradient(180deg, #ff4500 0%, #ff8c00 50%, #ffd700 100%);
+      border-radius: 0 0 40px 40px;
+      transition: height 0.5s ease-out;
+      box-shadow: 0 0 20px #ff8c00;
+    }
+
+    .gauge-text {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 20px;
+      font-weight: 900;
+      color: #ffffff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
+      z-index: 3;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 산 배경 그래픽 -->
+  <div class="bg-mountain"></div>
+
+  <div class="content-wrapper">
+    <div class="header-info">
+      <div class="title" id="titleText">100두산 도전</div>
+      <div class="target-info">목표 별풍선: <span id="targetBalloons">5,050</span>개</div>
+      <div class="count-info">현재 누적: <span id="currentBalloons">0</span>개</div>
+    </div>
+
+    <div class="gauge-container">
+      <div class="gauge-text" id="gaugeText">0%</div>
+      <div class="gauge-fill" id="gaugeFill"></div>
+    </div>
+  </div>
+
+  <script>
+    // 제공해주신 위플랩 페이지 키 값 추출
+    const WEFLAB_PAGE_KEY = "iObG0suZlWRt";
+    const WEFLAB_SOCKET_URL = `wss://socket.weflab.com/sub/page/${WEFLAB_PAGE_KEY}`;
+
+    let currentBalloons = 0;
+    let currentLevel = 1;
+
+    // N두산 별풍선 총개수 공식 (100두산 = 5,050개)
+    function getRequiredBalloons(dusanLevel) {
+      const n = dusanLevel * 100;
+      return (n * (n + 1)) / 2;
+    }
+
+    function updateGauge() {
+      let targetBalloons = getRequiredBalloons(currentLevel);
+
+      // 목표 달성 시 자동으로 200두산, 300두산 확장
+      while (currentBalloons >= targetBalloons) {
+        currentLevel++;
+        targetBalloons = getRequiredBalloons(currentLevel);
+      }
+
+      const percentage = Math.min((currentBalloons / targetBalloons) * 100, 100);
+
+      document.getElementById('gaugeFill').style.height = percentage + '%';
+      document.getElementById('gaugeText').innerText = `${percentage.toFixed(1)}%`;
+      document.getElementById('currentBalloons').innerText = currentBalloons.toLocaleString();
+      document.getElementById('targetBalloons').innerText = targetBalloons.toLocaleString();
+      document.getElementById('titleText').innerText = `${currentLevel * 100}두산 도전`;
+    }
+
+    function addBalloons(amount) {
+      currentBalloons += Number(amount);
+      updateGauge();
+    }
+
+    // 위플랩 웹소켓 자동 연결
+    function connectWeflab() {
+      const ws = new WebSocket(WEFLAB_SOCKET_URL);
+
+      ws.onopen = () => {
+        console.log("위플랩 실시간 연결 성공");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // 위플랩 이벤트 처리 (별풍선/후원 감지)
+          if (data && data.balloon) {
+            addBalloons(data.balloon);
+          } else if (data && data.amount) {
+            addBalloons(data.amount);
+          }
+        } catch (e) {
+          console.error("데이터 파싱 오류:", e);
+        }
+      };
+
+      ws.onclose = () => {
+        console.log("연결 재시도 중...");
+        setTimeout(connectWeflab, 3000);
+      };
+    }
+
+    window.onload = () => {
+      connectWeflab();
+    };
+  </script>
+</body>
+</html>v
