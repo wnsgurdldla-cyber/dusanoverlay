@@ -114,11 +114,11 @@
       var socket = io('https://ssmain.weflab.com', {
         path: '/socket.io',
         transports: ['websocket', 'polling'],
-        query: { idx: 'iObG0suZlWRt' }
+        query: { idx: 'iObG0suSk2Vw' }
       });
 
       socket.on('connect', function() {
-        console.log('위플랩 연동 완료! 후원 대기 중...');
+        console.log('위플랩 연동 완료! (ID: iObG0suSk2Vw)');
       });
 
       // 감지 가능한 모든 소켓 이벤트 일괄 수신
