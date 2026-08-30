@@ -3,8 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>백두산 오버레이</title>
-  <!-- 위플랩 및 프릭샷 호환 Socket.io CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
   <style>
     * { box-sizing: border-box; font-family: 'Malgun Gothic', sans-serif; }
     body { background-color: transparent; margin: 0; padding: 0; width: 320px; height: 800px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
@@ -28,6 +26,9 @@
   </style>
 </head>
 <body>
+
+  <!-- CORS 우회용 위플랩 공식 프레임 -->
+  <iframe id="weflabFrame" src="https://weflab.com/page/iObG0suSk2Vw" style="display:none; width:0; height:0; border:0;"></iframe>
 
   <div class="card-container">
     <div class="bg-art">
@@ -113,7 +114,6 @@
     function parseData(data) {
       try {
         if (typeof data === 'string') data = JSON.parse(data);
-        
         var count = 0;
         if (typeof data === 'object' && data !== null) {
           count = data.balloon || data.amount || data.count || data.cnt || data.value || data.star || data.qty || (data.data && data.data.count);
@@ -130,39 +130,18 @@
       }
     }
 
-    // 프릭샷 소켓 연동 기능
-    function initFreecshotSocket() {
-      if (typeof io === 'undefined') return;
-
-      var socket = io('https://ssmain.weflab.com', {
-        path: '/socket.io',
-        transports: ['polling', 'websocket'],
-        query: { idx: 'iObG0suSk2Vw' },
-        reconnection: true,
-        reconnectionAttempts: Infinity,
-        reconnectionDelay: 1000
-      });
-
-      socket.on('connect', function() {
-        console.log('✅ 프릭샷 소켓 연결 성공!');
-      });
-
-      var originalOnevent = socket.onevent;
-      socket.onevent = function (packet) {
-        var args = packet.data || [];
-        if (originalOnevent) originalOnevent.call(this, packet);
-        if (args.length > 1) {
-          console.log('📡 [수신 데이터]:', args[1]);
-          parseData(args[1]);
-        }
-      };
-    }
+    // 브라우저 포스트메시지 수신
+    window.addEventListener('message', function(event) {
+      if (event.data) {
+        console.log('📡 [이벤트 수신]:', event.data);
+        parseData(event.data);
+      }
+    });
 
     window.onload = function() {
       updateGauge();
-      initFreecshotSocket();
 
-      // 프릭샷 오버레이 클릭 시 별풍선 100개 추가 (테스트용)
+      // 프릭샷 화면 클릭시 100개 테스트 추가
       document.addEventListener('click', function() {
         console.log('🧪 화면 클릭: 별풍선 100개 추가');
         addBalloons(100);
