@@ -2,140 +2,214 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>위플랩 연동 산 배경 백두산</title>
+  <title>백두산 오버레이</title>
+  <!-- Socket.IO 클라이언트 라이브러리 -->
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
     * {
       box-sizing: border-box;
-      font-family: 'Pretendard', 'Malgun Gothic', sans-serif;
+      font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
     }
     body {
       background-color: transparent;
       margin: 0;
       padding: 0;
-      width: 300px;
+      width: 320px;
       height: 800px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .card-container {
+      position: relative;
+      width: 280px;
+      height: 760px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 24px;
+      padding: 20px 16px;
       display: flex;
       flex-direction: column;
       align-items: center;
       overflow: hidden;
-      position: relative;
     }
 
-    /* 산 배경 디자인 레이어 */
-    .bg-mountain {
+    .bg-art {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      /* 수묵화/웅장한 산 배경 그래픽 */
-      background: linear-gradient(to bottom, rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.4)),
-                  url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=600&q=80') center/cover no-repeat;
-      z-index: 1;
-      border-radius: 20px;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .mountain-shape {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 50%;
+      opacity: 0.3;
     }
 
-    /* 콘텐츠 영역 */
-    .content-wrapper {
+    .header {
       position: relative;
       z-index: 2;
       width: 100%;
-      height: 100%;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(0, 255, 204, 0.15);
+      color: #00ffcc;
+      border: 1px solid rgba(0, 255, 204, 0.4);
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .target-title {
+      color: #ffffff;
+      font-size: 24px;
+      font-weight: 900;
+      margin: 0;
+    }
+    .balloon-stats {
+      margin-top: 6px;
+      font-size: 13px;
+      color: #94a3b8;
+    }
+    .balloon-stats strong {
+      color: #ffcc00;
+      font-size: 14px;
     }
 
-    .header-info {
+    .promise-box {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px dashed rgba(255, 204, 0, 0.5);
+      border-radius: 12px;
+      padding: 10px;
       text-align: center;
-      color: #ffffff;
-      text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.9), 0 0 10px rgba(0, 255, 204, 0.4);
       margin-bottom: 15px;
     }
-    .title {
-      font-size: 24px;
-      font-weight: 800;
-      color: #00ffcc;
-      text-shadow: 0 0 10px rgba(0, 255, 204, 0.8);
-    }
-    .target-info {
-      font-size: 15px;
-      color: #e2e8f0;
-      margin-top: 6px;
-    }
-    .count-info {
-      font-size: 18px;
-      color: #ffd700;
+    .promise-label {
+      font-size: 11px;
+      color: #ffcc00;
       font-weight: bold;
-      margin-top: 4px;
+      margin-bottom: 2px;
+    }
+    .promise-text {
+      font-size: 14px;
+      color: #ffffff;
+      font-weight: bold;
     }
 
-    /* 세로형 게이지 바 */
-    .gauge-container {
+    .gauge-wrapper {
       position: relative;
-      width: 85px;
-      height: 600px;
-      background: rgba(0, 0, 0, 0.65);
-      border: 3px solid rgba(255, 255, 255, 0.8);
-      border-radius: 45px;
-      overflow: hidden;
-      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(4px);
+      z-index: 2;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
-
+    .gauge-track {
+      position: relative;
+      width: 14px;
+      height: 500px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+    }
     .gauge-fill {
       position: absolute;
       bottom: 0;
       width: 100%;
       height: 0%;
-      background: linear-gradient(180deg, #ff4500 0%, #ff8c00 50%, #ffd700 100%);
-      border-radius: 0 0 40px 40px;
+      background: #ff8c00;
+      border-radius: 8px;
       transition: height 0.5s ease-out;
-      box-shadow: 0 0 20px #ff8c00;
     }
-
-    .gauge-text {
+    .red-pin {
       position: absolute;
-      width: 100%;
-      text-align: center;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 20px;
-      font-weight: 900;
+      bottom: 0%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      width: 60px;
+      height: 60px;
+      background: #cc0033;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: bottom 0.5s ease-out;
+      z-index: 5;
+    }
+    .pin-number {
       color: #ffffff;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9);
-      z-index: 3;
+      font-size: 15px;
+      font-weight: 900;
+    }
+    .pin-label {
+      color: rgba(255, 255, 255, 0.8);
+      font-size: 10px;
+      font-weight: bold;
     }
   </style>
 </head>
 <body>
 
-  <!-- 산 배경 그래픽 -->
-  <div class="bg-mountain"></div>
-
-  <div class="content-wrapper">
-    <div class="header-info">
-      <div class="title" id="titleText">100두산 도전</div>
-      <div class="target-info">목표 별풍선: <span id="targetBalloons">5,050</span>개</div>
-      <div class="count-info">현재 누적: <span id="currentBalloons">0</span>개</div>
+  <div class="card-container">
+    <div class="bg-art">
+      <svg class="mountain-shape" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <path fill="#334155" d="M0,100 L0,60 L30,20 L60,70 L80,35 L100,50 L100,100 Z"/>
+        <path fill="#1e293b" d="M0,100 L0,75 L20,45 L45,80 L75,30 L100,65 L100,100 Z"/>
+      </svg>
     </div>
 
-    <div class="gauge-container">
-      <div class="gauge-text" id="gaugeText">0%</div>
-      <div class="gauge-fill" id="gaugeFill"></div>
+    <div class="header">
+      <div class="badge" id="levelBadge">STEP 1</div>
+      <h1 class="target-title" id="titleText">100두산 도전</h1>
+      <div class="balloon-stats">
+        <span id="currentBalloons">0</span> / <strong id="targetBalloons">5,050</strong> 개
+      </div>
+    </div>
+
+    <div class="promise-box">
+      <div class="promise-label" id="promiseLabel">100두산 달성 공약</div>
+      <div class="promise-text" id="promiseText">노래 1곡 부르기</div>
+    </div>
+
+    <div class="gauge-wrapper">
+      <div class="gauge-track">
+        <div class="gauge-fill" id="gaugeFill"></div>
+        <div class="red-pin" id="redPin">
+          <span class="pin-number" id="pinNumber">0</span>
+          <span class="pin-label">두산</span>
+        </div>
+      </div>
     </div>
   </div>
 
   <script>
-    // 제공해주신 위플랩 페이지 키 값 추출
-    const WEFLAB_PAGE_KEY = "iObG0suZlWRt";
-    const WEFLAB_SOCKET_URL = `wss://socket.weflab.com/sub/page/${WEFLAB_PAGE_KEY}`;
-
     let currentBalloons = 0;
     let currentLevel = 1;
 
-    // N두산 별풍선 총개수 공식 (100두산 = 5,050개)
+    let promises = {
+      1: "노래 1곡 부르기",
+      2: "애교 3종 세트",
+      3: "리액션 댄스",
+      4: "시청자 미션 수행",
+      5: "벌칙 음료 마시기"
+    };
+
     function getRequiredBalloons(dusanLevel) {
       const n = dusanLevel * 100;
       return (n * (n + 1)) / 2;
@@ -144,7 +218,6 @@
     function updateGauge() {
       let targetBalloons = getRequiredBalloons(currentLevel);
 
-      // 목표 달성 시 자동으로 200두산, 300두산 확장
       while (currentBalloons >= targetBalloons) {
         currentLevel++;
         targetBalloons = getRequiredBalloons(currentLevel);
@@ -153,10 +226,20 @@
       const percentage = Math.min((currentBalloons / targetBalloons) * 100, 100);
 
       document.getElementById('gaugeFill').style.height = percentage + '%';
-      document.getElementById('gaugeText').innerText = `${percentage.toFixed(1)}%`;
+      document.getElementById('redPin').style.bottom = percentage + '%';
+
+      const currentDusanStep = Math.floor(Math.sqrt(2 * currentBalloons));
+      document.getElementById('pinNumber').innerText = currentDusanStep;
+
       document.getElementById('currentBalloons').innerText = currentBalloons.toLocaleString();
       document.getElementById('targetBalloons').innerText = targetBalloons.toLocaleString();
-      document.getElementById('titleText').innerText = `${currentLevel * 100}두산 도전`;
+      
+      const dusanTarget = currentLevel * 100;
+      document.getElementById('titleText').innerText = dusanTarget + '두산 도전';
+      document.getElementById('levelBadge').innerText = 'STEP ' + currentLevel;
+
+      document.getElementById('promiseLabel').innerText = dusanTarget + '두산 달성 공약';
+      document.getElementById('promiseText').innerText = promises[currentLevel] || "자유 공약 진행!";
     }
 
     function addBalloons(amount) {
@@ -164,38 +247,42 @@
       updateGauge();
     }
 
-    // 위플랩 웹소켓 자동 연결
     function connectWeflab() {
-      const ws = new WebSocket(WEFLAB_SOCKET_URL);
-
-      ws.onopen = () => {
-        console.log("위플랩 실시간 연결 성공");
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          // 위플랩 이벤트 처리 (별풍선/후원 감지)
-          if (data && data.balloon) {
-            addBalloons(data.balloon);
-          } else if (data && data.amount) {
-            addBalloons(data.amount);
-          }
-        } catch (e) {
-          console.error("데이터 파싱 오류:", e);
+      // 위플랩 Socket.IO 연결
+      var socket = io('https://ssmain.weflab.com', {
+        path: '/socket.io',
+        transports: ['websocket'],
+        query: {
+          idx: 'iObG0suZlWRt'
         }
-      };
+      });
 
-      ws.onclose = () => {
-        console.log("연결 재시도 중...");
-        setTimeout(connectWeflab, 3000);
-      };
+      socket.on('connect', function() {
+        console.log('위플랩 Socket.IO 연동 성공!');
+      });
+
+      socket.onAny(function(eventName, data) {
+        console.log('수신 데이터:', eventName, data);
+        try {
+          if (typeof data === 'string') data = JSON.parse(data);
+          var count = data.balloon || data.amount || data.count || data.cnt || data.value;
+          if (count) {
+            addBalloons(Number(count));
+          }
+        } catch(e) {
+          console.error('데이터 파싱 오류:', e);
+        }
+      });
+
+      socket.on('disconnect', function() {
+        console.log('연결 종료됨');
+      });
     }
 
-    window.onload = () => {
+    window.onload = function() {
+      updateGauge();
       connectWeflab();
     };
   </script>
 </body>
-</html>v
+</html>
