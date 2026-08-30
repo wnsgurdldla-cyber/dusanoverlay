@@ -261,12 +261,21 @@
         console.log('위플랩 Socket.IO 연동 성공!');
       });
 
+      // 데이터 수신 처리 보완
       socket.onAny(function(eventName, data) {
-        console.log('수신 데이터:', eventName, data);
+        console.log('수신 데이터 상세:', eventName, data);
         try {
           if (typeof data === 'string') data = JSON.parse(data);
-          var count = data.balloon || data.amount || data.count || data.cnt || data.value;
-          if (count) {
+          
+          // 위플랩/투네이션/플랩 등 다양한 별풍선 변수명 감지
+          var count = data.balloon || data.amount || data.count || data.cnt || data.value || data.star || data.qty;
+          
+          // data 객체 자체가 숫자나 문자열 형태로 전달된 경우
+          if (!count && (typeof data === 'number' || !isNaN(Number(data)))) {
+            count = Number(data);
+          }
+
+          if (count && !isNaN(Number(count))) {
             addBalloons(Number(count));
           }
         } catch(e) {
@@ -278,11 +287,6 @@
         console.log('연결 종료됨');
       });
     }
-
-    window.onload = function() {
-      updateGauge();
-      connectWeflab();
-    };
   </script>
 </body>
 </html>
