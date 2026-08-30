@@ -109,39 +109,43 @@
       updateGauge();
     }
 
-    // 소켓 및 웹소켓 2중 연결 감지
     function connectWeflab() {
-      // 1. Socket.IO 채널
       var socket = io('https://ssmain.weflab.com', {
         path: '/socket.io',
         transports: ['websocket'],
         query: { idx: 'iObG0suZlWRt' }
       });
 
-      socket.onAny(function(eventName, data) {
-        parseAndAdd(data);
+      socket.on('connect', function() {
+        console.log('위플랩 연동 완료! 후원 대기 중...');
       });
 
-      // 2. 순수 WebSocket 수신 채널 (목표치 전용 백업)
-      try {
-        var ws = new WebSocket('wss://socket.weflab.com/sub/page/iObG0suZlWRt');
-        ws.onmessage = function(event) {
-          parseAndAdd(event.data);
-        };
-      } catch(e) {}
+      // 들어오는 모든 데이터 감지 및 분석
+      socket.onAny(function(eventName, data) {
+        console.log('수신 이벤트:', eventName, data);
+        parseData(data);
+      });
     }
 
-    function parseAndAdd(data) {
-      console.log('실제 들어온 데이터:', data);
+    function parseData(data) {
       try {
         if (typeof data === 'string') data = JSON.parse(data);
-        var count = data.balloon || data.amount || data.count || data.cnt || data.value || data.star || data.qty;
-        if (!count && typeof data === 'number') count = data;
         
-        if (count && !isNaN(Number(count))) {
+        // 데이터 객체 내부의 수량 데이터 탐색
+        var count = 0;
+        if (typeof data === 'object' && data !== null) {
+          count = data.balloon || data.amount || data.count || data.cnt || data.value || data.star || data.qty || (data.data && data.data.count);
+        } else if (typeof data === 'number') {
+          count = data;
+        }
+
+        if (count && !isNaN(Number(count)) && Number(count) > 0) {
+          console.log('별풍선 추가 처리:', count);
           addBalloons(Number(count));
         }
-      } catch(e) {}
+      } catch(e) {
+        console.error('파싱 오류:', e);
+      }
     }
 
     window.onload = function() {
