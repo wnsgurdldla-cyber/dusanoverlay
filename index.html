@@ -139,10 +139,13 @@
       }
     });
 
-    window.onload = function() {
-      updateGauge();
-      console.log('✅ 브라우저 이벤트 감지기 가동 완료');
-    };
-  </script>
-</body>
-</html>
+   window.onload = function() {
+  updateGauge();
+  initFreecshotSocket();
+
+  // 프릭샷 오버레이 클릭 시 별풍선 100개 추가 (테스트용)
+  document.addEventListener('click', function() {
+    console.log('🧪 프릭샷 화면 클릭: 별풍선 100개 추가');
+    addBalloons(100);
+  });
+};
