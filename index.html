@@ -110,9 +110,10 @@
     }
 
     function connectWeflab() {
+      // 1. 소켓 연결 (모든 이벤트 바인딩)
       var socket = io('https://ssmain.weflab.com', {
         path: '/socket.io',
-        transports: ['websocket'],
+        transports: ['websocket', 'polling'],
         query: { idx: 'iObG0suZlWRt' }
       });
 
@@ -120,9 +121,17 @@
         console.log('위플랩 연동 완료! 후원 대기 중...');
       });
 
-      // 들어오는 모든 데이터 감지 및 분석
+      // 감지 가능한 모든 소켓 이벤트 일괄 수신
+      var events = ['message', 'donation', 'balloon', 'notice', 'alert', 'data', 'test'];
+      events.forEach(function(ev) {
+        socket.on(ev, function(data) {
+          console.log('[소켓 이벤트 수신 - ' + ev + ']:', data);
+          parseData(data);
+        });
+      });
+
       socket.onAny(function(eventName, data) {
-        console.log('수신 이벤트:', eventName, data);
+        console.log('[와일드카드 수신 - ' + eventName + ']:', data);
         parseData(data);
       });
     }
@@ -131,7 +140,6 @@
       try {
         if (typeof data === 'string') data = JSON.parse(data);
         
-        // 데이터 객체 내부의 수량 데이터 탐색
         var count = 0;
         if (typeof data === 'object' && data !== null) {
           count = data.balloon || data.amount || data.count || data.cnt || data.value || data.star || data.qty || (data.data && data.data.count);
@@ -140,11 +148,11 @@
         }
 
         if (count && !isNaN(Number(count)) && Number(count) > 0) {
-          console.log('별풍선 추가 처리:', count);
+          console.log('-> 별풍선 수량 반영:', count);
           addBalloons(Number(count));
         }
       } catch(e) {
-        console.error('파싱 오류:', e);
+        console.error('데이터 해석 오류:', e);
       }
     }
 
