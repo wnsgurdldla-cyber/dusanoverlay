@@ -28,6 +28,9 @@
 </head>
 <body>
 
+  <!-- 위플랩 서버 세션 차단 방지용 숨김 iframe -->
+  <iframe src="https://weflab.com/page/iObG0suSk2Vw" style="display:none; width:0; height:0; border:0;"></iframe>
+
   <div class="card-container">
     <div class="bg-art">
       <svg class="mountain-shape" viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -110,15 +113,31 @@
     }
 
     function connectWeflab() {
-      // 프릭샷 내부 브로드캐스트 채널 생성
-      const channel = new BroadcastChannel('weflab_donation_channel');
+      // 위플랩 서버 소켓 연결 (websocket 단독 지정)
+      var socket = io('https://ssmain.weflab.com', {
+        path: '/socket.io',
+        transports: ['websocket'],
+        query: { 
+          idx: 'iObG0suSk2Vw'
+        }
+      });
 
-      channel.onmessage = function(event) {
-        console.log('📡 [내부 채널 신호 수신]:', event.data);
-        parseData(event.data);
-      };
+      socket.on('connect', function() {
+        console.log('✅ 위플랩 소켓 서버 연결 성공! (ID: iObG0suSk2Vw)');
+      });
 
-      console.log('✅ 프릭샷 내부 통신 채널 연결 완료!');
+      socket.on('disconnect', function(reason) {
+        console.warn('⚠️ 위플랩 소켓 연결 끊김:', reason);
+      });
+
+      socket.on('connect_error', function(error) {
+        console.error('❌ 소켓 연결 에러:', error);
+      });
+
+      socket.onAny(function(eventName, data) {
+        console.log('📡 [신호 수신 - ' + eventName + ']:', data);
+        parseData(data);
+      });
     }
 
     function parseData(data) {
